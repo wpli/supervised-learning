@@ -220,7 +220,7 @@ if 1:
         current_training_points = 0
         
         train_data = [ i for i in landmark_train_dict[landmark] if i[0].hour in start_time_counts ]
-        train_features = numpy.array( [ featurize( i[0], feature_limit ) for i in train_data ] )
+        train_features = numpy.array( [ featurize( i[0], possible_days, test_days_dict, feature_limit ) for i in train_data ] )
         train_y = numpy.array( [i[1] for i in train_data ] )
         
         #for i in range( num_training_points ):

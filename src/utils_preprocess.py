@@ -1,6 +1,30 @@
 import datetime
 import collections
+import random
+import utils_general
+import os
+import cPickle
+
+def get_landmark_pickup_dict( landmarks, pickups, sq_dist_threshold ):
+    filename = '../data/landmark_pickup_dict.pkl'
+    if os.path.exists( filename ):
+        with open( filename ) as f:
+            landmark_pickup_dict = cPickle.load( f ) 
+    else:
+        landmark_pickup_dict = {}
+        for landmark in list( landmarks ):
+            landmark_pickup_dict[landmark] = [ idx for idx, i in enumerate( pickups ) \
+                                                   if utils_general.calculate_square_dist( landmark[0], landmark[1], i[1], i[2] ) \
+                                                   <= sq_dist_threshold ]
+
+        with open( filename, 'w' ) as f:
+            cPickle.dump( landmark_pickup_dict, f )
+
+    return landmark_pickup_dict
+                                              
 def get_train_validation_landmark_dicts( landmark_pickup_dict, pickups, train_test_split ):
+    landmark_train_dict = {}
+    landmark_test_dict = {}
     for landmark, pickup_indices in landmark_pickup_dict.items():
         pickup_time_windows = []
         for p_idx in pickup_indices:
