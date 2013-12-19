@@ -1,0 +1,4 @@
+# raw data
+wget https://s3.amazonaws.com/mitbigdata/datasets/test1.txt
+wget http://bigdatachallenge.csail.mit.edu/download/pickups_train.csv.gz
+gunzip pickups_train.csv.gz
