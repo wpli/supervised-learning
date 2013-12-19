@@ -1,5 +1,5 @@
 
-==Instructions==
+*Instructions*
 
 Run data/getdata.sh to get the data
 
@@ -7,7 +7,7 @@ Run master.py to generate a submission file
 
 Add features in utils_features.py, then add the function name to the feature_function_list in master.py
 
-==Dependencies==
+*Dependencies*
 
 Python 2.7
 
