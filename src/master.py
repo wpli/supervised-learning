@@ -140,7 +140,7 @@ def main():
     output_filename = '../submissions/submission.%s.txt' % extension
     with open( output_filename, 'w' ) as f:
         for i in final_predictions:
-            f.write( "%s %s\n" %( i[0], max( int(round(i[1],0), 0 ) ) ) )
+            f.write( "%s %s\n" %( i[0], str(max( int(round(i[1],0) ), 0 ) ) ) )
     
     sys.stderr.write( "Wrote %s.\n" % output_filename )
 
