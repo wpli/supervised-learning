@@ -31,17 +31,20 @@ def feature_day_of_week_binary( dt, **kwargs ):
 def feature_time_quadrant_binary( dt, **kwargs ):
     #time quadrants: 4-10, 10-4, 4-10, 10-4
     time_quadrant_binary_feature = [0,0,0,0]
-    #idx_to_activate = ( dt.hour - 4 ) / ( 6 ) 
-    if dt.hour >= 4 and dt.hour< 10:
-        idx_to_activate = 0
-    elif dt.hour >= 10 and dt.hour < 16:
-        idx_to_activate = 1
-    elif dt.hour >= 16 and dt.hour < 22:
-        idx_to_activate = 2
-    else:
-        idx_to_activate = 3
+    #idx_to_activate = ( dt.hour - 4 ) / ( 6 )
+    offsets = [ 2,4 ]
+    #offsets = [0,1,2,3,4,5]
+    for offset in offsets:
+        if dt.hour >= offset and dt.hour< offset+6:
+            idx_to_activate = 0
+        elif dt.hour >= offset+6 and dt.hour < offset+12:
+            idx_to_activate = 1
+        elif dt.hour >= offset+12 and dt.hour < offset+18:
+            idx_to_activate = 2
+        else:
+            idx_to_activate = 3
 
-    time_quadrant_binary_feature[idx_to_activate] = 1
+        time_quadrant_binary_feature[idx_to_activate] = 1
 
     return time_quadrant_binary_feature
 
@@ -90,6 +93,17 @@ def feature_day( dt, **kwargs ):
         
 def feature_week_number( dt, **kwargs ):
     return [ dt.isocalendar()[1] ]
+
+def feature_landmark_taxi_popularity( dt, **kwargs ):
+    if "all_pickups" in kwargs:
+        all_pickups = kwargs["all_pickups"]
+
+    else:
+        all_pickups = 0
+
+    return [ all_pickups ]
+
+
 
 # unit test
 def unit_test():
