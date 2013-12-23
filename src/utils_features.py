@@ -48,6 +48,24 @@ def feature_time_quadrant_binary( dt, **kwargs ):
 
     return time_quadrant_binary_feature
 
+def feature_even_hour_binary( dt, **kwargs ):
+    binary_features = [ 0 ] * 12
+
+    
+    if dt.hour % 2 == 0:
+        binary_features[ dt.hour / 2 ] = 1
+    else:
+        binary_features[ dt.hour / 2 ] = 0.5
+        next_idx = ( dt.hour / 2 + 1 ) % 12
+        binary_features[ next_idx ] = 0.5
+    return binary_features
+
+def feature_hour_binary( dt, **kwargs ):
+    binary_features = [ 0 ] * 24
+    binary_features[ dt.hour ] = 1
+    return binary_features
+
+
 def feature_day_time_product_binary( dt, **kwargs ):
     day_time_binary_features = []
     day_of_week_binary_features = feature_day_of_week_binary( dt )
@@ -65,6 +83,30 @@ def feature_corrected_hour( dt, **kwargs ):
         corrected_hour += 24
     corrected_hour_feature = [ corrected_hour ]
     return corrected_hour_feature
+
+def feature_other_pickups( dt, **kwargs ):
+    if "background_pickups_counter" in kwargs:
+        background_pickups_counter = kwargs["background_pickups_counter"]
+
+    total_pickups = 0
+    total_pickups += background_pickups_counter[ ( dt.date(), dt.hour ) ] 
+    total_pickups += background_pickups_counter[ ( dt.date(), dt.hour+1 ) ]
+
+    return [ total_pickups ]
+
+def feature_nearby_pickups( dt, **kwargs ):
+    features = []
+    for nearby_pickups_counter in ( kwargs['nearby_pickups_counter'], kwargs['km_nearby_pickups_counter'] ):
+        total_nearby_pickups = 0
+        total_nearby_pickups += nearby_pickups_counter.get( ( dt.date(), dt.hour ), 0 )
+        total_nearby_pickups += nearby_pickups_counter.get( ( dt.date(), dt.hour+1 ), 0 )
+        next_day_pickups = nearby_pickups_counter.get( ( dt.date()+datetime.timedelta(days=1), dt.hour ), 0 ) + nearby_pickups_counter.get( ( dt.date()+datetime.timedelta(days=1), dt.hour+1 ), 0 )
+        previous_day_pickups = nearby_pickups_counter.get( ( dt.date()-datetime.timedelta(days=1), dt.hour ), 0 ) + nearby_pickups_counter.get( ( dt.date()-datetime.timedelta(days=1), dt.hour+1 ), 0 )
+        next_week_pickups = nearby_pickups_counter.get( ( dt.date()+datetime.timedelta(days=7), dt.hour ), 0 ) + nearby_pickups_counter.get( ( dt.date()+datetime.timedelta(days=7), dt.hour+1 ), 0 )
+        previous_week_pickups = nearby_pickups_counter.get( ( dt.date()-datetime.timedelta(days=7), dt.hour ), 0 ) + nearby_pickups_counter.get( ( dt.date()-datetime.timedelta(days=7), dt.hour+1 ), 0 )
+        features += [ total_nearby_pickups, previous_day_pickups, next_week_pickups, previous_week_pickups, next_week_pickups ]
+
+    return features
 
 
 def feature_day( dt, **kwargs ):
