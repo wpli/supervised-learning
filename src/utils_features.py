@@ -94,6 +94,20 @@ def feature_other_pickups( dt, **kwargs ):
 
     return [ total_pickups ]
 
+def feature_lon_lat_rounded( dt, **kwargs ):
+    if "lon_lat" in kwargs:
+        lon_lat = kwargs["lon_lat"]
+
+    lon_rounded = lon_lat[0] + 72
+    lon_rounded = lon_rounded * 100.0
+    lat_rounded = lon_lat[1] - 42
+    lat_rounded = lat_rounded * 100.0
+
+    return [ lon_rounded, lat_rounded ]
+
+
+        
+
 def feature_nearby_pickups( dt, **kwargs ):
     features = []
     for nearby_pickups_counter in ( kwargs['nearby_pickups_counter'], kwargs['km_nearby_pickups_counter'] ):
@@ -104,7 +118,7 @@ def feature_nearby_pickups( dt, **kwargs ):
         previous_day_pickups = nearby_pickups_counter.get( ( dt.date()-datetime.timedelta(days=1), dt.hour ), 0 ) + nearby_pickups_counter.get( ( dt.date()-datetime.timedelta(days=1), dt.hour+1 ), 0 )
         next_week_pickups = nearby_pickups_counter.get( ( dt.date()+datetime.timedelta(days=7), dt.hour ), 0 ) + nearby_pickups_counter.get( ( dt.date()+datetime.timedelta(days=7), dt.hour+1 ), 0 )
         previous_week_pickups = nearby_pickups_counter.get( ( dt.date()-datetime.timedelta(days=7), dt.hour ), 0 ) + nearby_pickups_counter.get( ( dt.date()-datetime.timedelta(days=7), dt.hour+1 ), 0 )
-        features += [ total_nearby_pickups, previous_day_pickups, next_week_pickups, previous_week_pickups, next_week_pickups ]
+        features += [ total_nearby_pickups ] #, previous_day_pickups, next_week_pickups, previous_week_pickups, next_week_pickups ]
 
     return features
 
