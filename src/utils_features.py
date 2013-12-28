@@ -9,7 +9,6 @@ def featurize( dt, feature_function_list, **kwargs ):
 
     features = []
     
-
     for feature_function in feature_function_list:
         features += feature_function( dt, **kwargs )
 
@@ -27,6 +26,18 @@ def feature_day_of_week_binary( dt, **kwargs ):
             day_of_week_binary_features.append( 0 )  
 
     return day_of_week_binary_features
+
+def feature_day_month_product_binary( dt, **kwargs ):
+    day_month_binary_features = []
+    day_of_week_binary_features = feature_day_of_week_binary( dt )
+    month_binary_features = [ 0 ] * 12
+    month_binary_features[dt.month-1] = 1
+    for i in day_of_week_binary_features:
+        for j in month_binary_features:
+            day_month_binary_features.append( i*j )
+
+    return day_month_binary_features
+    
 
 def feature_time_quadrant_binary( dt, **kwargs ):
     #time quadrants: 4-10, 10-4, 4-10, 10-4
@@ -90,7 +101,10 @@ def feature_other_pickups( dt, **kwargs ):
 
     total_pickups = 0
     total_pickups += background_pickups_counter[ ( dt.date(), dt.hour ) ] 
-    total_pickups += background_pickups_counter[ ( dt.date(), dt.hour+1 ) ]
+    if dt.hour == 23:
+        total_pickups += background_pickups_counter[ ( dt.date() + datetime.timedelta(days=1), 0 ) ]
+    else:
+        total_pickups += background_pickups_counter[ ( dt.date(), dt.hour+1 ) ]
 
     return [ total_pickups ]
 
@@ -105,8 +119,7 @@ def feature_lon_lat_rounded( dt, **kwargs ):
 
     return [ lon_rounded, lat_rounded ]
 
-
-        
+    
 
 def feature_nearby_pickups( dt, **kwargs ):
     features = []
