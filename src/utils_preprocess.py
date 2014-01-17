@@ -5,8 +5,8 @@ import utils_general
 import os
 import cPickle
 
-def get_landmark_pickup_dict( landmarks, pickups, sq_dist_threshold ):
-    filename = '../data/landmark_pickup_dict.pkl'
+def get_landmark_pickup_dict( landmarks, pickups, sq_dist_threshold, filename ):
+
     if os.path.exists( filename ):
         with open( filename ) as f:
             landmark_pickup_dict = cPickle.load( f ) 

@@ -76,11 +76,10 @@ def feature_hour_binary( dt, **kwargs ):
     binary_features[ dt.hour ] = 1
     return binary_features
 
-
 def feature_day_time_product_binary( dt, **kwargs ):
     day_time_binary_features = []
     day_of_week_binary_features = feature_day_of_week_binary( dt )
-    time_quadrant_binary_feature = feature_time_quadrant_binary( dt )
+    time_quadrant_binary_feature = feature_even_hour_binary( dt )
 
     for i in day_of_week_binary_features:
         for j in time_quadrant_binary_feature:

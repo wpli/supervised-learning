@@ -5,7 +5,9 @@ import os
 def convert_date( date_string ):
     return datetime.datetime.strptime( date_string, "%Y-%m-%d %H:%M" )
 
-
+"""
+returns pickups: [ ( datetime, lon, lat ), ... ]
+"""
 def get_pickups( filename ):
     pickle_file = filename + ".pkl"
     if os.path.exists( pickle_file ):
