@@ -138,25 +138,6 @@ len( landmark_other_trips_counter[x] )
 
 # <codecell>
 
-print len( pickups )
-
-# <codecell>
-
-query = [ i for i in pickups if i[0] < datetime.datetime( 2012, 5, 11, 22, 0 ) and i[0] > datetime.datetime(2012,5,11,20)]
-
-# <codecell>
-
-query = [ i for i in pickups if i[0] < datetime.datetime( 2012, 5, 12, 1, 0 ) and i[0] > datetime.datetime(2012,5,11,23)]
-X = [ i[1] for i in query ]
-Y = [ i[2] for i in query ]
-p = plt.Figure()
-figsize(10,10)
-scatter(X,Y,s=2,alpha=.2)
-landmarks_lon = [ i[0] for i in list( landmarks ) ]
-landmarks_lat = [ i[1] for i in list( landmarks ) ]
-scatter( landmarks_lon, landmarks_lat )
-xlim( -71.15, -71.01 )
-ylim( 42.33, 42.37 )
 
 # <codecell>
 
@@ -227,12 +208,54 @@ def get_nearest_landmarks( target_landmark, landmarks, radius_km ):
 
 # <codecell>
 
+with open( '../data/interestpoints.csv' ) as f:
+    x = f.read().split('\n')
+    if x[-1] == '':
+        del x[-1]
+        
+    del x[0]
+    
+interest_points_list = [ i.split(',') for i in x ]
+name_lon_lat = [ ( i[0], float( i[3] ), float( i[2] ) ) for i in interest_points_list ]
+lon_lat_name_dict = {}
+for i in name_lon_lat:
+    lon_lat_name_dict[ ( i[1], i[2] ) ] = i[0]
+    
+for landm in list( landmarks ):
+    print lon_lat_name_dict[ landm ]
+
+    
+
+# <codecell>
+
+def jaccard_index( name1, name2 ):
+    name1_words = set( name1.lower().split() )
+    name2_words = set( name2.lower().split() )
+    for s in (name1_words, name2_words):
+        if "of" in s:    
+            s.remove( "of" )
+        if "the"  in s:
+            s.remove( "the" )
+    
+    intersect = len( set.intersection( name1_words, name2_words ) )
+    union = len( set.union( name1_words, name2_words ) )
+    
+    jaccard = float( intersect ) / union
+    return jaccard
+
+print jaccard_index( "hello woRld", "starbucks World" )
+print jaccard_index( "logan airport", "27 drydock" )
+print jaccard_index( "inst of art", "logan of" )
+
+# <codecell>
+
 import utils_features
 reload( utils_features )
 feature_function_list = [ \
                               utils_features.feature_day_of_week_binary , \
                               utils_features.feature_time_quadrant_binary, \
                               utils_features.feature_day_time_product_binary, \
+                              utils_features.feature_day_month_product_binary, \
                               utils_features.feature_corrected_hour, \
                               utils_features.feature_day, \
                               utils_features.feature_week_number, \
@@ -241,8 +264,6 @@ feature_function_list = [ \
                               utils_features.feature_other_pickups, \
                               utils_features.feature_nearby_pickups, \
                               utils_features.feature_lon_lat_rounded ]
-    
-
     
 #regression_model = linear_model.Ridge()
 regression_model = ensemble.RandomForestRegressor( n_estimators=30  )
@@ -260,16 +281,26 @@ if 1:
     # train model on training+validation set and compute predictions on test set                                
     
     train_val_performance = []
-    for landm in list( landmarks ):
+    for landm_idx, landm in enumerate( list( landmarks ) ):
         
         train_data = []
         train_features = []
         train_y = []
-        nearest_landmarks = get_nearest_landmarks( landm, list( landmarks ), radius_km = DIST_THRESHOLD * 2 )
-        print len( nearest_landmarks )
-        for landmark in nearest_landmarks:
+        #nearest_landmarks = get_nearest_landmarks( landm, list( landmarks ), radius_km = 2*DIST_THRESHOLD )
+        nearest_landmarks = []
+        similarly_named_landmarks = []
+        for l2 in list(landmarks):
+            if jaccard_index( lon_lat_name_dict[l2], lon_lat_name_dict[landm] ) > 0.0:
+                similarly_named_landmarks.append( l2 )
+        
+        landmarks_to_include = list( set( similarly_named_landmarks + nearest_landmarks ) )
+        print lon_lat_name_dict[landm], [ lon_lat_name_dict[i] for i in landmarks_to_include ]
+        
+        #print len( nearest_landmarks )
+        for landmark in landmarks_to_include:
+            total_pickups = len( landmark_pickup_dict[landmark] )
             train_data = [ i for i in sampled_landmark_train_dict[landmark] ]
-            train_features += [ utils_features.featurize( \
+            additional_train_features = [ utils_features.featurize( \
                                                                  i[0], feature_function_list, \
                                                                  lon_lat = landmark, \
                                                                  possible_days=possible_days, \
@@ -280,23 +311,29 @@ if 1:
                                                                  km_nearby_pickups_counter=multiplier_landmark_dict[4][landmark], \
                                                                  ) for i in \
                                                                 train_data ]
+            
+            
+            train_features += additional_train_features
             train_y += [i[1] for i in train_data ]
+            #if landmark == landm:
+            #    train_features += additional_train_features
+            #    train_y += [i[1] for i in train_data ]
+                
+            
             
             
             
             
 
         val_data = []
-
         landmark = landm
-        val_data += sampled_landmark_val_dict[landmark]
-        
-        test_data = [ times_locations[idx][1] for idx in landmark_time_location_dict[landmark] ]
-        test_data_indices = [ times_locations[idx][0] for idx in landmark_time_location_dict[landmark] ]
+        val_data = sampled_landmark_val_dict[landmark]
         total_pickups = len( landmark_pickup_dict[landmark] )
+        
+        
         #total_pickups = 0
 
-        val_features = numpy.array( [ utils_features.featurize( \
+        val_features = [ utils_features.featurize( \
                                                                  i[0], feature_function_list, \
                                                                  lon_lat = landmark, \
                                                                  possible_days=possible_days, \
@@ -306,10 +343,16 @@ if 1:
                                                                  nearby_pickups_counter=multiplier_landmark_dict[2][landmark], \
                                                                  km_nearby_pickups_counter=multiplier_landmark_dict[4][landmark], \
                                                                  ) for i in \
-                                                                 val_data ] )
+                                                                 val_data ]
+        
+        
+        assert len( val_data ) == len( val_features )
+        
+        test_data = [ times_locations[idx][1] for idx in landmark_time_location_dict[landmark] ]
+        test_data_indices = [ times_locations[idx][0] for idx in landmark_time_location_dict[landmark] ]
         
         # note that test_data is in a slightly different format than train_data and val_data because it does not have predictions
-        test_features = numpy.array( [ utils_features.featurize( i, \
+        test_features = [ utils_features.featurize( i, \
                                                                  feature_function_list, \
                                                                  lon_lat = landmark, \
                                                                  possible_days=possible_days, \
@@ -319,32 +362,30 @@ if 1:
                                                                  nearby_pickups_counter=multiplier_landmark_dict[2][landmark], \
                                                                  km_nearby_pickups_counter=multiplier_landmark_dict[4][landmark], \
                                                                  ) for i in \
-                                                                test_data ] )
+                                                                test_data ]
+        
+        
         
         val_y = numpy.array( [i[1] for i in val_data ] )                                                    
                                                                 
-        if len( train_features ) == 0:
-            test_predictions = [ 0 for i in test_features ]
-            
-            
-            
-            
-            
+        if len( val_features ) == 0: # or landm != (-71.059608, 42.3592):
+            test_predictions = [ 0 for i in test_features ]    
         else:
             sys.stderr.write( "Fitting regression model on training data..." )
+            #print [ len(i) for i in val_features ]
+        
             clf = regression_model
             clf.fit( train_features, train_y )
             # compute performance on training data
             predictions = clf.predict( train_features )
-            
-            
-            
-            
             predictions = [ max( i,0) for i in predictions ]
             landmark_train_prediction_rms_errors = [ numpy.sqrt((predictions[idx] - train_y[idx])**2) for idx in range(len(predictions)) ]
             all_train_prediction_rms_errors += landmark_train_prediction_rms_errors
-            
+            assert len( val_features ) > 0
             # compute performance on validation data
+            for i in val_features:
+                assert len( i ) == len( train_features[0] )
+            
             predictions = clf.predict( val_features )
             predictions = [ max( round(i,0), 0 ) for i in predictions ]
             landmark_val_prediction_rms_errors = \
@@ -357,8 +398,8 @@ if 1:
             sys.stderr.write( "\n" )
             train_val_performance.append( ( landmark, numpy.average( landmark_train_prediction_rms_errors ), \
                 numpy.average( landmark_val_prediction_rms_errors ) ) )
-            sys.stderr.write( "%s, %s, %s, %s\n" % ( \
-                landmark, numpy.average( landmark_train_prediction_rms_errors ), \
+            sys.stderr.write( "%s, %s, %s, %s, %s, %s\n" % ( \
+                landm_idx, landmark, lon_lat_name_dict[landmark], numpy.average( landmark_train_prediction_rms_errors ), \
                 numpy.average( landmark_val_prediction_rms_errors ), \
                 len( test_features ) ) )
             
@@ -417,6 +458,29 @@ if 1:
 
 # <codecell>
 
+val_prediction_actual_tuples
+
+# <codecell>
+
+for idx, landmark in enumerate( list( landmarks ) ):
+    if landmark == (-71.04493, 42.346577):
+        counts = sampled_landmark_train_dict[landmark]
+        counts.sort( key=lambda x:x[0] )
+        #dts = [ i[0][0] + datetime.timedelta( hours=i[0][1] ) for i in counts ]
+        dts = [ i[0] for i in counts ]
+        taxis = [ i[1] for i in counts ] 
+        scatter( dts, taxis, s=1 )
+
+# <codecell>
+
+dts[0]
+
+# <codecell>
+
+print times_locations
+
+# <codecell>
+
 train_val_performance.sort( key=lambda x:x[2], reverse=True )
 scatter( *zip( *[ x[0] for x in train_val_performance if x[2] > 9.0 ] ), marker='x' )
 scatter( *zip( *[ x[0] for x in train_val_performance if x[2] < 6.0 ] ), c='r' )
@@ -426,9 +490,9 @@ scatter( *zip( *[ x[0] for x in train_val_performance if x[2] < 6.0 ] ), c='r' )
 
 nearby = []
 for v, y in zip( val_features, val_y ):
-    nearby.append( ( numpy.average( v[-10] ), y  ))
+    nearby.append( ( numpy.average( v[-1] ), y  ))
     
-scatter( [ v[-2] for v in val_features ], val_y )
+scatter( [ v[-12] for v in val_features ], val_y )
 
 # <codecell>
 
@@ -466,6 +530,10 @@ val_prediction_actual_tuples.sort( key=lambda x:x[0])
 
 # <codecell>
 
+print val_prediction_actual_tuples[-10:]
+
+# <codecell>
+
 pickups = [ i[1] for i in sampled_landmark_train_dict[landmark] ]
 hist(pickups)
 
@@ -493,4 +561,19 @@ scatter( lons, lats )
 pickup_lons = [i[1] for i in pickups ]
 pickup_lats = [i[2] for i in pickups ]
 scatter( pickup_lons[:1000], pickup_lats[:1000] )
+
+# <codecell>
+
+query = [ i for i in pickups if i[0] < datetime.datetime( 2012, 5, 11, 22, 0 ) and i[0] > datetime.datetime(2012,5,11,20)]
+query = [ i for i in pickups if i[0] < datetime.datetime( 2012, 5, 12, 1, 0 ) and i[0] > datetime.datetime(2012,5,11,23)]
+X = [ i[1] for i in query ]
+Y = [ i[2] for i in query ]
+p = plt.Figure()
+figsize(10,10)
+scatter(X,Y,s=2,alpha=.2)
+landmarks_lon = [ i[0] for i in list( landmarks ) ]
+landmarks_lat = [ i[1] for i in list( landmarks ) ]
+scatter( landmarks_lon, landmarks_lat )
+xlim( -71.15, -71.01 )
+ylim( 42.33, 42.37 )
 

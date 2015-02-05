@@ -63,6 +63,20 @@ with open( '../processed_data/landmark_pickup_dict.pkl', 'w' ) as f:
 
 # <codecell>
 
+def f( thing1 ):
+    print thing1
+    
+def print_everything(*args):
+    for count, thing in enumerate(args):
+        print '{0}. {1}'.format(count, thing)
+
+    f( args[2] )
+        
+        
+print_everything('apple', 'banana', 'cabbage')
+
+# <codecell>
+
 # create a training set and a test set of two hour blocks
 import collections
 TRAIN_TEST_SPLIT = 0.8
