@@ -71,6 +71,18 @@ def feature_even_hour_binary( dt, **kwargs ):
         binary_features[ next_idx ] = 0.5
     return binary_features
 
+def feature_hour_max_ever( dt, **kwargs ):
+    current_landmark = kwargs['current_landmark']
+    pickups_by_hour = kwargs['pickups_by_hour'] 
+    for h in ( dt.hour, dt.hour + 1 ):
+        pickups = pickups_by_hour[current_landmark][h] 
+        max_pickups = numpy.max(pickups)
+        mean_pickups = numpy.average( pickups )
+        std_pickups = numpy.std( pickups )
+
+
+    #dt.hour 
+
 def feature_hour_binary( dt, **kwargs ):
     binary_features = [ 0 ] * 24
     binary_features[ dt.hour ] = 1
@@ -126,11 +138,15 @@ def feature_nearby_pickups( dt, **kwargs ):
         total_nearby_pickups = 0
         total_nearby_pickups += nearby_pickups_counter.get( ( dt.date(), dt.hour ), 0 )
         total_nearby_pickups += nearby_pickups_counter.get( ( dt.date(), dt.hour+1 ), 0 )
+        previous_hour_pickups = nearby_pickups_counter.get( ( dt.date(), dt.hour-1 ), 0 )
+        next_hour_pickups = nearby_pickups_counter.get( ( dt.date(), dt.hour+2 ), 0 )
+        previous_twohour_pickups = nearby_pickups_counter.get( ( dt.date(), dt.hour-2 ), 0 )
+        next_twohour_pickups = nearby_pickups_counter.get( ( dt.date(), dt.hour+3 ), 0 )
         next_day_pickups = nearby_pickups_counter.get( ( dt.date()+datetime.timedelta(days=1), dt.hour ), 0 ) + nearby_pickups_counter.get( ( dt.date()+datetime.timedelta(days=1), dt.hour+1 ), 0 )
         previous_day_pickups = nearby_pickups_counter.get( ( dt.date()-datetime.timedelta(days=1), dt.hour ), 0 ) + nearby_pickups_counter.get( ( dt.date()-datetime.timedelta(days=1), dt.hour+1 ), 0 )
         next_week_pickups = nearby_pickups_counter.get( ( dt.date()+datetime.timedelta(days=7), dt.hour ), 0 ) + nearby_pickups_counter.get( ( dt.date()+datetime.timedelta(days=7), dt.hour+1 ), 0 )
         previous_week_pickups = nearby_pickups_counter.get( ( dt.date()-datetime.timedelta(days=7), dt.hour ), 0 ) + nearby_pickups_counter.get( ( dt.date()-datetime.timedelta(days=7), dt.hour+1 ), 0 )
-        features += [ total_nearby_pickups ] #, previous_day_pickups, next_week_pickups, previous_week_pickups, next_week_pickups ]
+        features += [ total_nearby_pickups, previous_hour_pickups, next_hour_pickups, previous_twohour_pickups, next_twohour_pickups ] #, previous_day_pickups, next_week_pickups, previous_week_pickups, next_week_pickups ]
 
     return features
 
